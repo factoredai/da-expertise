@@ -1,0 +1,27 @@
+# Raw text block for .gitignore
+# Environments & Credentials
+.env
+*.env
+.data_tokens/
+certs/
+
+# Python & Jupyter Notebooks
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.virtualenv/
+venv/
+env/
+
+# dbt (Data Build Tool) artifacts
+target/
+dbt_packages/
+dbt_modules/
+logs/
+
+# OS/IDE specific
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
