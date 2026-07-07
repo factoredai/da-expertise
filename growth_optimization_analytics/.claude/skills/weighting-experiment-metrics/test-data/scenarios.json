@@ -1,0 +1,173 @@
+{
+  "about": "Synthetic test cases for the weighting-experiment-metrics skill. Each case feeds the skill a leadership context and (optionally) experiment deltas, then asserts observable expected behavior. Cases tagged deterministic=true have a fixed correct index/decision and double as regression checks; others test reasoning quality (phase mapping, constraint enforcement, guardrail gating).",
+  "delta_units": "percent (variant vs control baseline)",
+  "cases": [
+    {
+      "id": "C1-no-context",
+      "deterministic": false,
+      "query": "Help me set Success Index weights for our next experiment.",
+      "leadership_context": null,
+      "experiment": null,
+      "expected_behavior": [
+        "Runs Step 1 and ASKS for maturity phase / strategic priority before proposing any numbers",
+        "Asks about drag risk tolerance (attrition vs bad debt vs technical)",
+        "Does not fabricate a phase; if forced, states an explicit assumption"
+      ]
+    },
+    {
+      "id": "C2-market-capture",
+      "deterministic": false,
+      "query": "We're a seed-stage SaaS in a land-grab. Top priority is signing as many new logos as possible this quarter; churn and billing issues are tolerable for now. Recommend weights.",
+      "leadership_context": {
+        "priority": "acquire share fast",
+        "drag_risk_order": ["attrition lowish", "bad_debt low", "technical low"]
+      },
+      "experiment": null,
+      "expected": {
+        "phase_mapping": "Approach 1 — Market Capture & Acquisition",
+        "anchor_weights": { "w1": 0.5, "w2": 0.2, "w3": 0.3, "p1": 3.0, "p2": 1.5, "p3": 1.0 }
+      },
+      "expected_behavior": [
+        "Maps to Market Capture and anchors on w1=0.5 (acquisition dominant)",
+        "Returned w1+w2+w3 == 1.0",
+        "Every pi >= 1.0",
+        "One-line justification per weight"
+      ]
+    },
+    {
+      "id": "C3-monetization",
+      "deterministic": false,
+      "query": "Mature platform, big installed base. Goal this year is expansion revenue and upsell. We are very sensitive to uncollected/bad debt because finance got burned last year. Set weights.",
+      "leadership_context": {
+        "priority": "monetize / expand",
+        "drag_risk_order": ["bad_debt highest", "attrition medium", "technical low"]
+      },
+      "experiment": null,
+      "expected": {
+        "phase_mapping": "Approach 2 — Monetization & Expansion",
+        "anchor_weights": { "w1": 0.2, "w2": 0.5, "w3": 0.3, "p1": 2.0, "p2": 3.0, "p3": 1.0 }
+      },
+      "expected_behavior": [
+        "Maps to Monetization; w2 dominant",
+        "p2 (bad balances) is the largest penalty given finance sensitivity",
+        "Sum of w == 1.0; all pi >= 1.0"
+      ]
+    },
+    {
+      "id": "C4-product-health",
+      "deterministic": false,
+      "query": "We have a churn problem and reliability complaints. This year is all about retention and product stability. Recommend the weighting matrix.",
+      "leadership_context": {
+        "priority": "retain / harden product",
+        "drag_risk_order": ["technical high", "attrition high", "bad_debt low"]
+      },
+      "experiment": null,
+      "expected": {
+        "phase_mapping": "Approach 3 — Product Health & Churn Mitigation",
+        "anchor_weights": { "w1": 0.2, "w2": 0.2, "w3": 0.6, "p1": 2.0, "p2": 1.0, "p3": 2.5 }
+      },
+      "expected_behavior": [
+        "Maps to Product Health; w3 dominant",
+        "p3 (technical friction) elevated (>= 2.5)",
+        "Sum of w == 1.0; all pi >= 1.0"
+      ]
+    },
+    {
+      "id": "C5-example1-deploy",
+      "deterministic": true,
+      "query": "Approach 3 weights are set: w1=0.2, w2=0.2, w3=0.6, p1=2.0, p2=1.0, p3=2.5. Experiment results: Onboarding Milestone +15%, Acquisition +3%, Technical Friction +1%, everything else flat. Guardrails all clear. Score it.",
+      "leadership_context": { "phase": "Approach 3", "weights": { "w1": 0.2, "w2": 0.2, "w3": 0.6, "p1": 2.0, "p2": 1.0, "p3": 2.5 } },
+      "experiment": {
+        "deltas": { "acquisition": 3, "expansion": 0, "milestone": 15, "attrition": 0, "bad_balances": 0, "technical_friction": 1 },
+        "guardrails": { "srm_p": 0.42, "support_ticket_spike_pct": 2 }
+      },
+      "expected": { "index": 7.1, "decision": "DEPLOY" },
+      "expected_behavior": [
+        "Shows substituted arithmetic = 0.6 + 0 + 9.0 - 2.5",
+        "Computes index = +7.1",
+        "Decision = DEPLOY"
+      ]
+    },
+    {
+      "id": "C6-example2-reject-mirage",
+      "deterministic": true,
+      "query": "Approach 2 weights: w1=0.2, w2=0.5, w3=0.3, p1=2.0, p2=3.0, p3=1.0. Results: Expansion +14%, Bad Balances +4%, Technical Friction +2%, rest flat. Guardrails clear. Score it.",
+      "leadership_context": { "phase": "Approach 2", "weights": { "w1": 0.2, "w2": 0.5, "w3": 0.3, "p1": 2.0, "p2": 3.0, "p3": 1.0 } },
+      "experiment": {
+        "deltas": { "acquisition": 0, "expansion": 14, "milestone": 0, "attrition": 0, "bad_balances": 4, "technical_friction": 2 },
+        "guardrails": { "srm_p": 0.30, "support_ticket_spike_pct": 1 }
+      },
+      "expected": { "index": -7.0, "decision": "REJECT" },
+      "expected_behavior": [
+        "Shows arithmetic = 0 + 7.0 + 0 - 12.0 - 2.0",
+        "Computes index = -7.0",
+        "Decision = REJECT and explicitly names the volume mirage (+14% expansion drained by bad-debt penalty)"
+      ]
+    },
+    {
+      "id": "C7-guardrail-srm-invalid",
+      "deterministic": true,
+      "query": "Approach 1 weights: w1=0.5, w2=0.2, w3=0.3, p1=3.0, p2=1.5, p3=1.0. Results look great: Acquisition +20%, no drags. BUT the SRM Chi-squared canary fired at p=0.0004. Score it.",
+      "leadership_context": { "phase": "Approach 1", "weights": { "w1": 0.5, "w2": 0.2, "w3": 0.3, "p1": 3.0, "p2": 1.5, "p3": 1.0 } },
+      "experiment": {
+        "deltas": { "acquisition": 20, "expansion": 0, "milestone": 0, "attrition": 0, "bad_balances": 0, "technical_friction": 0 },
+        "guardrails": { "srm_p": 0.0004, "support_ticket_spike_pct": 0 }
+      },
+      "expected": { "index": null, "decision": "INVALID" },
+      "expected_behavior": [
+        "Checks Layer 1 guardrail FIRST",
+        "Recognizes SRM p=0.0004 < 0.001 breach",
+        "Declares the index null and void; verdict INVALID; sample discarded",
+        "Does NOT report a positive DEPLOY despite the +20% acquisition"
+      ]
+    },
+    {
+      "id": "C8-guardrail-operational-freeze",
+      "deterministic": true,
+      "query": "Approach 1 weights: w1=0.5, w2=0.2, w3=0.3, p1=3.0, p2=1.5, p3=1.0. Results: Acquisition +12%, no drags, index is positive. SRM is clean (p=0.5) but support ticket volume jumped +28% over baseline. Score it.",
+      "leadership_context": { "phase": "Approach 1", "weights": { "w1": 0.5, "w2": 0.2, "w3": 0.3, "p1": 3.0, "p2": 1.5, "p3": 1.0 } },
+      "experiment": {
+        "deltas": { "acquisition": 12, "expansion": 0, "milestone": 0, "attrition": 0, "bad_balances": 0, "technical_friction": 0 },
+        "guardrails": { "srm_p": 0.5, "support_ticket_spike_pct": 28 }
+      },
+      "expected": { "index": 6.0, "decision": "FREEZE" },
+      "expected_behavior": [
+        "Computes positive index (0.5*12 = +6.0)",
+        "Recognizes +28% support-ticket spike breaches the >15% operational ceiling",
+        "Verdict = FREEZE for manual executive review rather than auto-DEPLOY"
+      ]
+    },
+    {
+      "id": "C9-reporting-lag-flag",
+      "deterministic": false,
+      "query": "Approach 2. Our product uses 3-day deferred invoices, and bad-debt only shows in the DB ~30-45 days later. We ran a 7-day test: Expansion +9%, all drags currently flat. Score it and tell me if I can trust it.",
+      "leadership_context": { "phase": "Approach 2", "lag_concern": true },
+      "experiment": {
+        "deltas": { "acquisition": 0, "expansion": 9, "milestone": 0, "attrition": 0, "bad_balances": 0, "technical_friction": 0 },
+        "guardrails": { "srm_p": 0.4, "support_ticket_spike_pct": 3 }
+      },
+      "expected_behavior": [
+        "Computes a positive index from the +9% expansion",
+        "Flags Backlog gap #3 (reporting lag): bad-debt/attrition may not have landed in a 7-day window",
+        "Recommends a lag-correction coefficient or a data-maturation freeze before finalizing rollout",
+        "Treats the DEPLOY signal as low-confidence rather than final"
+      ]
+    },
+    {
+      "id": "C10-custom-blend-constraint",
+      "deterministic": false,
+      "query": "We're mostly in growth but starting to care about retention too — call it 70% acquisition focus, 30% keep-them-happy. Attrition is our scariest risk. Give me weights.",
+      "leadership_context": {
+        "priority": "blend: acquisition-leaning with emerging retention focus",
+        "drag_risk_order": ["attrition highest"]
+      },
+      "experiment": null,
+      "expected_behavior": [
+        "Anchors on Market Capture but shifts some weight toward w3 (milestone/retention)",
+        "Returned w1+w2+w3 == 1.0 after adjustment (states the normalization)",
+        "p1 (attrition) is the dominant penalty and all pi >= 1.0",
+        "Notes the blend explicitly in justifications"
+      ]
+    }
+  ]
+}
