@@ -1,0 +1,4 @@
+# Test dependencies for the DA CoE marketplace validation suite.
+# Install with: pip install -r requirements-test.txt
+pytest>=8.0
+PyYAML>=6.0

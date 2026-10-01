@@ -1,0 +1,21 @@
+{
+  "name": "da-marketplace",
+  "version": "1.0.0",
+  "description": "Official Data Analytics CoE Plugin Marketplace",
+  "owner": {
+    "name": "Data Analytics CoE",
+    "email": "sebastian.rupani@factored.ai"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "growth-optimization-analytics",
+      "source": "./plugins/growth-optimization-analytics",
+      "description": "Comprehensive analytics toolkit for experimentation and statistical analysis.",
+      "category": "Growth & Optimization",
+      "tags": ["growth", "optimization", "analytics", "experimentation", "statistics"]
+    }
+  ]
+}
