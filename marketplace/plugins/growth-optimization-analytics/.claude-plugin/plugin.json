@@ -1,0 +1,14 @@
+{
+  "name": "growth-optimization-analytics",
+  "displayName": "Growth & Optimization Analytics Suite",
+  "version": "1.0.0",
+  "description": "Comprehensive analytics toolkit for experimentation and statistical analysis.",
+  "author": {
+    "name": "G&O Expertise Group",
+    "email": "sebastian.rupani@factored.ai"
+  },
+  "keywords": [
+    "metrics",
+    "eda"
+  ]
+}

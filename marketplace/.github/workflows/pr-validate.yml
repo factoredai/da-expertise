@@ -1,0 +1,55 @@
+name: Validate & sync marketplace
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancel a stale run when the PR gets a new push, so the auto-commit step
+# below never races against itself.
+concurrency:
+  group: pr-validate-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          # Default GITHUB_TOKEN: works for same-repo branches (per this
+          # repo's contribution workflow); it can't push to a fork's branch,
+          # and its pushes don't re-trigger Actions (not needed here since
+          # pytest already ran against the synced state in this same job).
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Sync marketplace.json from plugins/ on disk
+        run: python utils/marketplace_sync.py
+
+      - name: Run validation suite
+        run: pytest -q
+
+      - name: Commit marketplace.json sync (if changed)
+        run: |
+          if git diff --quiet -- .claude-plugin/marketplace.json; then
+            echo "marketplace.json already in sync; nothing to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .claude-plugin/marketplace.json
+            git commit -m "chore(utils): auto-generated marketplace.json sync"
+            git push origin HEAD:${{ github.head_ref }}
+          fi

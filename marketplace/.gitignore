@@ -1,0 +1,11 @@
+# Python virtual environments (see TESTING.md)
+.venv/
+venv/
+
+# Test / build caches
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store

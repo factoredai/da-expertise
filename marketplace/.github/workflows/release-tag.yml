@@ -1,0 +1,35 @@
+name: Release tagging
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history/tags — release_tagging.py needs to see every existing '<plugin>@v*' tag
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Guard against tagging an out-of-sync catalog
+        run: python utils/marketplace_sync.py --check
+
+      - name: Run validation suite
+        run: pytest -q
+
+      - name: Create and push pending release tags
+        run: python utils/release_tagging.py --apply --push
