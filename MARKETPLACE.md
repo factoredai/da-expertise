@@ -18,10 +18,16 @@ This repository serves as a centralized registry of domain-driven plugins built 
 
 ### 1. How to Add the DA CoE Marketplace
 
-To register this marketplace in your local Claude Code CLI environment, run the following command in your terminal:
+To register this marketplace in your local CLI environment, run the following command in your terminal:
 
+**Claude Code:**
 ```bash
-/plugin marketplace add factoredai/da-expertise
+claude plugin marketplace add factoredai/da-expertise
+```
+
+**Codex:**
+```bash
+codex plugin marketplace add factoredai/da-expertise
 ```
 
 > **Note:** Ensure you have read access to `Factored` GitHub organization and that your SSH/HTTPS credentials are configured for GitHub.
@@ -35,15 +41,19 @@ Once the marketplace is registered, you can search for and install domain plugin
 #### Install a Plugin
 To install the **Growth & Optimization Analytics Suite**:
 
+**Claude Code:**
 ```bash
-/plugin install growth-optimization-analytics@da-marketplace
+claude plugin install growth-optimization-analytics@da-marketplace
 ```
-
-#### Activate & Reload Session
 After installation, reload your plugins or restart your Claude Code session to activate all associated skills:
 
 ```bash
 /reload-plugins
+```
+
+**Codex:**
+```bash
+codex plugin add growth-optimization-analytics@da-marketplace 
 ```
 
 #### Test an Installed Skill
@@ -61,22 +71,23 @@ We encourage expertise groups to add new skills to existing domain plugins or in
 
 ### Repository Layout Rules
 
-The marketplace catalog, plugins, and validation tooling live at the root of this
-repository (`da-expertise`), alongside the other expertise-group directories:
+The marketplace catalog, plugins, and validation tooling live at the root of this repository (`da-expertise`), alongside the other expertise-group directories:
 
-A plugin lives directly inside its expertise group's own directory — there is no
-shared `plugins/` root. A directory becomes a plugin by containing a
-`.claude-plugin/plugin.json` manifest and a `skills/` folder; the directory's
-name (e.g. `growth_optimization_analytics`) needn't match the plugin's
-kebab-case `name` (e.g. `growth-optimization-analytics`) in that manifest.
+A plugin lives directly inside its expertise group's own directory. A directory becomes a plugin by containing a `.claude-plugin/plugin.json` manifest (Claude Code) or a `plugin.json` (Codex) and a `skills/` folder. 
+
+The directory's name (e.g. `growth_optimization_analytics`) don't need to match the plugin's kebab-case `name` (e.g. `growth-optimization-analytics`) in that manifest.
 
 ```text
 da-expertise/
+├── .agents/
+│   └── plugins/
+│       └── marketplace.json               # Central Catalog for Portable Agent Plugins
 ├── .claude-plugin/
 │   └── marketplace.json                   # Central Catalog Index (Auto-synced via CI)
 ├── growth_optimization_analytics/         # Expertise Group directory AND its plugin
+│   ├── plugin.json                        # Portable Agent Plugins manifest
 │   ├── .claude-plugin/
-│   │   └── plugin.json                    # Plugin Manifest (SSOT for metadata)
+│   │   └── plugin.json                    # Claude Plugin Manifest
 │   └── skills/                            # Skill Payloads
 │       └── <skill-name>/
 │           ├── SKILL.md                   # Primary skill prompt & metadata
