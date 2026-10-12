@@ -1,11 +1,16 @@
-"""Full-scan ``plugins/`` and reconcile it into ``.claude-plugin/marketplace.json``.
+"""Full-scan the repo root and reconcile it into ``.claude-plugin/marketplace.json``.
 
 Intended to be invoked by CI (see README.md's "Submit Pull Request" step) as
-well as run locally. Every plugin directory containing a valid
+well as run locally. Every top-level directory containing a valid
 ``.claude-plugin/plugin.json`` becomes (or updates) an entry in the catalog's
 ``plugins[]`` list; catalog entries with no matching directory on disk are
 dropped. Re-running with no changes on disk is a no-op (idempotent), so CI can
 run this on every PR without generating noisy diffs.
+
+A plugin lives directly inside its expertise group's directory (e.g.
+``growth_optimization_analytics/``), not under a shared ``plugins/`` root, so
+plugin directories are identified by the ``.claude-plugin/plugin.json``
+manifest they contain rather than by their location.
 """
 
 from __future__ import annotations
@@ -26,18 +31,17 @@ DEFAULT_CATEGORY = "Uncategorized"
 
 
 def discover_plugin_dirs(repo_root: Path) -> list[Path]:
-    """Every immediate subdirectory of plugins/ that holds a plugin manifest."""
-    plugins_root = repo_root / "plugins"
-    if not plugins_root.is_dir():
-        return []
+    """Every top-level repo directory that holds a plugin manifest."""
     return sorted(
         p
-        for p in plugins_root.iterdir()
-        if p.is_dir() and (p / ".claude-plugin" / "plugin.json").is_file()
+        for p in repo_root.iterdir()
+        if p.is_dir()
+        and not p.name.startswith(".")
+        and (p / ".claude-plugin" / "plugin.json").is_file()
     )
 
 
-def build_entry(manifest: dict[str, Any]) -> dict[str, Any]:
+def build_entry(manifest: dict[str, Any], plugin_dir: Path, repo_root: Path) -> dict[str, Any]:
     """Construct a marketplace ``plugins[]`` entry from a plugin.json manifest.
 
     ``category``/``tags`` are optional on plugin.json; when absent, fall back
@@ -53,9 +57,11 @@ def build_entry(manifest: dict[str, Any]) -> dict[str, Any]:
     if not is_str_list(tags):
         tags = manifest.get("keywords", [])
 
+    source = f"./{plugin_dir.relative_to(repo_root).as_posix()}"
+
     return {
         "name": name,
-        "source": f"./plugins/{name}",
+        "source": source,
         "description": manifest["description"],
         "category": category,
         "tags": tags,
@@ -81,7 +87,7 @@ def sync_marketplace(repo_root: Path, *, write: bool = True) -> tuple[dict[str, 
         name = manifest["name"]
         on_disk_names.add(name)
 
-        built = build_entry(manifest)
+        built = build_entry(manifest, plugin_dir, repo_root)
         current = existing_by_name.get(name)
         if current is not None:
             # Preserve hand-curated category/tags unless plugin.json now
@@ -129,9 +135,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check:
         if changed:
-            print("marketplace.json is out of sync with plugins/ on disk.")
+            print("marketplace.json is out of sync with the plugins on disk.")
             return 1
-        print("marketplace.json is in sync with plugins/ on disk.")
+        print("marketplace.json is in sync with the plugins on disk.")
         return 0
 
     print("marketplace.json updated." if changed else "marketplace.json already up to date.")

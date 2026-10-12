@@ -1,4 +1,4 @@
-"""Validate each skill: plugins/<id>/skills/<name>/SKILL.md.
+"""Validate each skill: <plugin-dir>/skills/<name>/SKILL.md.
 
 Parametrized per skill (see conftest.pytest_generate_tests) so each skill is a
 distinct test case in `pytest -v` output.

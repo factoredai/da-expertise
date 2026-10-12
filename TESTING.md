@@ -67,18 +67,18 @@ pytest -k "not test_plugin_name_matches_marketplace and not test_catalog_and_dis
 
 | Area | File | Checks |
 | :--- | :--- | :--- |
-| Catalog | `.claude-plugin/marketplace.json` | valid JSON; required fields (`name`, `version`, `description`, `owner{name,email}`, `metadata{pluginRoot}`, `plugins[]`); SemVer version; valid owner email; each plugin entry has `name/source/description/category/tags`; `source` == `./plugins/<name>` and exists on disk; catalog and on-disk plugins agree (no orphans / unlisted) |
-| Plugin manifest | `plugins/<id>/.claude-plugin/plugin.json` | valid JSON; required fields (`name`, `displayName`, `version`, `description`, `author{name,email}`, `keywords[]`); SemVer version; valid author email; `name` == directory == registered in catalog; has a non-empty `skills/` dir |
-| Skill | `plugins/<id>/skills/<name>/SKILL.md` | frontmatter parses as YAML; required `name` + `description`; `name` is kebab-case and matches the directory; non-empty `description`; no unexpected frontmatter keys |
+| Catalog | `.claude-plugin/marketplace.json` | valid JSON; required fields (`name`, `version`, `description`, `owner{name,email}`, `plugins[]`); SemVer version; valid owner email; each plugin entry has `name/source/description/category/tags`; `source` is a relative path that exists on disk and whose `plugin.json` name matches the entry; catalog and on-disk plugins agree (no orphans / unlisted) |
+| Plugin manifest | `<plugin-dir>/.claude-plugin/plugin.json` | valid JSON; required fields (`name`, `displayName`, `version`, `description`, `author{name,email}`, `keywords[]`); SemVer version; valid author email; `name` registered in catalog; has a non-empty `skills/` dir. A plugin lives directly inside its expertise group's directory (e.g. `growth_optimization_analytics/`), not under a shared `plugins/` root, and that directory's name needn't match the plugin's kebab-case `name` |
+| Skill | `<plugin-dir>/skills/<name>/SKILL.md` | frontmatter parses as YAML; required `name` + `description`; `name` is kebab-case and matches the directory; non-empty `description`; no unexpected frontmatter keys |
 
 ---
 
 ## Pre-PR checklist
 
 1. **Add / update your skill** under
-   `plugins/<plugin-id>/skills/<skill-name>/SKILL.md` with valid frontmatter
+   `<plugin-dir>/skills/<skill-name>/SKILL.md` with valid frontmatter
    (see the example below). The `name` must equal the folder name.
-2. **Bump the plugin version** in `plugins/<plugin-id>/.claude-plugin/plugin.json`
+2. **Bump the plugin version** in `<plugin-dir>/.claude-plugin/plugin.json`
    following [SemVer](https://semver.org/).
 3. **If you're adding a whole new plugin**, `marketplace.json` registration is
    automatic — run `python utils/marketplace_sync.py` locally (or let CI's
@@ -124,7 +124,7 @@ description: >
 | `unexpected frontmatter key(s) [...]` | non-standard frontmatter field | remove it, or add it to `ALLOWED_FRONTMATTER_FIELDS` in `tests/test_skills.py` if it's now official |
 | `'version' must be SemVer X.Y.Z` | version isn't `X.Y.Z` | use e.g. `1.2.0` |
 | `Plugins exist on disk but are not registered in marketplace.json` / `plugin '...' is not registered in marketplace.json` | new plugin dir not synced into the catalog yet | run `python utils/marketplace_sync.py` (or wait for CI's `pr-validate.yml` to do it and commit the result); while iterating, deselect these two checks — see "Running a subset" above |
-| `'source' path does not exist on disk` | catalog `source` points nowhere | fix the path to `./plugins/<id>` |
+| `'source' path does not exist on disk` | catalog `source` points nowhere | fix the path to the plugin's actual directory |
 
 ---
 
