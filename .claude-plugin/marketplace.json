@@ -6,13 +6,10 @@
     "name": "Data Analytics CoE",
     "email": "sebastian.rupani@factored.ai"
   },
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "plugins": [
     {
       "name": "growth-optimization-analytics",
-      "source": "./plugins/growth-optimization-analytics",
+      "source": "./growth_optimization_analytics",
       "description": "Comprehensive analytics toolkit for experimentation and statistical analysis.",
       "category": "Growth & Optimization",
       "tags": ["growth", "optimization", "analytics", "experimentation", "statistics"]

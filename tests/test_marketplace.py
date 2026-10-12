@@ -14,12 +14,13 @@ from helpers import (
     is_nonempty_str,
     is_semver,
     is_str_list,
+    load_json,
     require_fields,
 )
 
 pytestmark = pytest.mark.marketplace
 
-TOP_LEVEL_FIELDS = ["name", "version", "description", "owner", "metadata", "plugins"]
+TOP_LEVEL_FIELDS = ["name", "version", "description", "owner", "plugins"]
 PLUGIN_ENTRY_FIELDS = ["name", "source", "description", "category", "tags"]
 
 
@@ -47,12 +48,6 @@ def test_marketplace_owner(marketplace_json):
     assert is_email(owner["email"]), f"marketplace owner email is invalid: {owner['email']!r}."
 
 
-def test_marketplace_metadata(marketplace_json):
-    metadata = marketplace_json["metadata"]
-    require_fields(metadata, ["pluginRoot"], "marketplace.metadata")
-    assert is_nonempty_str(metadata["pluginRoot"]), "metadata 'pluginRoot' must be a non-empty string."
-
-
 def test_marketplace_plugins_is_nonempty_list(marketplace_json):
     plugins = marketplace_json["plugins"]
     assert isinstance(plugins, list) and plugins, "'plugins' must be a non-empty list."
@@ -72,18 +67,31 @@ def test_plugin_source_paths_resolve(marketplace_json, repo_root):
     for entry in marketplace_json["plugins"]:
         name, source = entry["name"], entry["source"]
         ctx = f"marketplace plugin entry {name!r}"
-        # Convention: source == ./plugins/<name>.
-        assert source == f"./plugins/{name}", (
-            f"{ctx}: 'source' should be './plugins/{name}', got {source!r}."
-        )
+        assert source.startswith("./"), f"{ctx}: 'source' should be a relative path, got {source!r}."
+
         resolved = (repo_root / source).resolve()
         assert resolved.is_dir(), f"{ctx}: 'source' path does not exist on disk: {resolved}."
 
+        manifest_path = resolved / ".claude-plugin" / "plugin.json"
+        manifest = load_json(manifest_path)
+        assert manifest["name"] == name, (
+            f"{ctx}: 'source' points at a plugin manifest named {manifest['name']!r}, "
+            f"expected {name!r}."
+        )
+
 
 def test_catalog_and_disk_agree(marketplace_json, plugin_dirs):
-    """Every plugin on disk is listed in the catalog, and vice versa."""
+    """Every plugin on disk is listed in the catalog, and vice versa.
+
+    Plugins are identified by their plugin.json ``name``, not their directory
+    name, since a plugin lives directly inside its expertise group's directory
+    (e.g. growth_optimization_analytics/), whose name needn't match the
+    kebab-case plugin id.
+    """
     listed = {entry["name"] for entry in marketplace_json["plugins"]}
-    on_disk = {p.name for p in plugin_dirs}
+    on_disk = {
+        load_json(p / ".claude-plugin" / "plugin.json")["name"] for p in plugin_dirs
+    }
 
     unlisted = on_disk - listed
     assert not unlisted, (
@@ -91,6 +99,5 @@ def test_catalog_and_disk_agree(marketplace_json, plugin_dirs):
     )
     orphaned = listed - on_disk
     assert not orphaned, (
-        f"marketplace.json lists plugins with no matching directory under plugins/: "
-        f"{sorted(orphaned)}."
+        f"marketplace.json lists plugins with no matching directory on disk: {sorted(orphaned)}."
     )

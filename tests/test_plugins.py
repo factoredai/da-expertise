@@ -1,4 +1,4 @@
-"""Validate each plugin manifest: plugins/<id>/.claude-plugin/plugin.json.
+"""Validate each plugin manifest: <plugin-dir>/.claude-plugin/plugin.json.
 
 Parametrized per plugin (see conftest.pytest_generate_tests) so each plugin is a
 distinct test case in `pytest -v` output.
@@ -59,14 +59,6 @@ def test_plugin_author(plugin_dir):
     require_fields(author, ["name", "email"], f"{plugin_dir.name}/plugin.json author")
     assert is_email(author["email"]), (
         f"{plugin_dir.name}/plugin.json: author email is invalid: {author['email']!r}."
-    )
-
-
-def test_plugin_name_matches_directory(plugin_dir):
-    manifest = _manifest(plugin_dir)
-    assert manifest["name"] == plugin_dir.name, (
-        f"plugin.json 'name' ({manifest['name']!r}) must match the plugin directory "
-        f"name ({plugin_dir.name!r})."
     )
 
 

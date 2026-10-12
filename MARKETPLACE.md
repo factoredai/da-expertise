@@ -21,7 +21,7 @@ This repository serves as a centralized registry of domain-driven plugins built 
 To register this marketplace in your local Claude Code CLI environment, run the following command in your terminal:
 
 ```bash
-/plugin marketplace add factoredai/da-marketplace
+/plugin marketplace add factoredai/da-expertise
 ```
 
 > **Note:** Ensure you have read access to `Factored` GitHub organization and that your SSH/HTTPS credentials are configured for GitHub.
@@ -61,29 +61,39 @@ We encourage expertise groups to add new skills to existing domain plugins or in
 
 ### Repository Layout Rules
 
-All plugin contributions must follow this directory structure:
+The marketplace catalog, plugins, and validation tooling live at the root of this
+repository (`da-expertise`), alongside the other expertise-group directories:
+
+A plugin lives directly inside its expertise group's own directory — there is no
+shared `plugins/` root. A directory becomes a plugin by containing a
+`.claude-plugin/plugin.json` manifest and a `skills/` folder; the directory's
+name (e.g. `growth_optimization_analytics`) needn't match the plugin's
+kebab-case `name` (e.g. `growth-optimization-analytics`) in that manifest.
 
 ```text
-da-marketplace/
+da-expertise/
 ├── .claude-plugin/
 │   └── marketplace.json                   # Central Catalog Index (Auto-synced via CI)
-├── plugins/
-│   └── <domain-plugin-id>/                # Expertise Group Plugin (e.g., growth-optimization-analytics)
-│       ├── .claude-plugin/
-│       │   └── plugin.json                # Plugin Manifest (SSOT for metadata)
-│       └── skills/                        # Skill Payloads
-│           └── <skill-name>/
-│               ├── SKILL.md               # Primary skill prompt & metadata
-│               └── reference.md           # Optional reference documentation
-└── README.md
+├── growth_optimization_analytics/         # Expertise Group directory AND its plugin
+│   ├── .claude-plugin/
+│   │   └── plugin.json                    # Plugin Manifest (SSOT for metadata)
+│   └── skills/                            # Skill Payloads
+│       └── <skill-name>/
+│           ├── SKILL.md                   # Primary skill prompt & metadata
+│           └── reference.md               # Optional reference documentation
+├── tests/, utils/, pytest.ini, requirements-test.txt  # Validation suite & sync tooling
+├── MARKETPLACE.md                         # This file
+├── analytics_engineering_platform/        # Other expertise-group directories
+├── strategic_executive_analytics/
+└── README.md                              # Top-level repo overview
 ```
 
 ### Contribution Workflow
 
 1. **Fork or Branch:** Create a feature branch named `feat/<domain-or-skill-name>` from `main`.
 2. **Add / Update Skills:**
-   * If adding to an existing domain (e.g., `growth-optimization-analytics`), create a new folder under `plugins/growth-optimization-analytics/skills/<skill-name>/` containing a valid `SKILL.md`.
-   * Update the `version` field in `plugins/<domain-plugin-id>/.claude-plugin/plugin.json` following [Semantic Versioning](https://semver.org/).
+   * If adding to an existing domain (e.g., `growth-optimization-analytics`), create a new folder under `growth_optimization_analytics/skills/<skill-name>/` containing a valid `SKILL.md`.
+   * Update the `version` field in `growth_optimization_analytics/.claude-plugin/plugin.json` following [Semantic Versioning](https://semver.org/).
 3. **Validate Manifests:** Run local validation or ensure JSON syntax is valid.
 4. **Submit Pull Request:** Open a PR against `main`. Our GitHub Actions workflow will automatically validate the manifest schema and update `.claude-plugin/marketplace.json`.
 5. **Release Tagging:** Upon merging to `main`, CI creates a release tag formatted as `<plugin-id>@v<semver>` (e.g., `growth-optimization-analytics@v1.0.0`).

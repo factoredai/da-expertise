@@ -7,11 +7,11 @@ a valid skill or plugin simply adds new (green) test cases.
 Key fixtures:
     repo_root         -> Path to the repository root.
     marketplace_json  -> parsed .claude-plugin/marketplace.json.
-    plugin_dirs       -> list of plugins/<id>/ directories on disk.
-    skill_dirs        -> list of plugins/<id>/skills/<name>/ directories on disk.
+    plugin_dirs       -> list of top-level plugin directories on disk.
+    skill_dirs        -> list of <plugin-dir>/skills/<name>/ directories on disk.
 
 The ``pytest_generate_tests`` hook injects two parametrized fixtures:
-    plugin_dir        -> one plugins/<id>/ directory per test case.
+    plugin_dir        -> one top-level plugin directory per test case.
     skill_dir         -> one skill directory per test case.
 """
 
@@ -26,21 +26,22 @@ from helpers import load_json
 # Repo root is the parent of the tests/ directory containing this file.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MARKETPLACE_PATH = REPO_ROOT / ".claude-plugin" / "marketplace.json"
-PLUGINS_ROOT = REPO_ROOT / "plugins"
 
 
 def discover_plugin_dirs() -> list[Path]:
-    """Every immediate subdirectory of plugins/ that holds a plugin manifest.
+    """Every top-level repo directory that holds a plugin manifest.
 
     A directory qualifies as a plugin if it contains .claude-plugin/plugin.json,
-    so unrelated folders (or stray files) are ignored.
+    so unrelated folders (tooling, docs, hidden dirs) are ignored. Plugins live
+    directly inside their expertise group's directory (e.g.
+    growth_optimization_analytics/), not under a shared plugins/ root.
     """
-    if not PLUGINS_ROOT.is_dir():
-        return []
     return sorted(
         p
-        for p in PLUGINS_ROOT.iterdir()
-        if p.is_dir() and (p / ".claude-plugin" / "plugin.json").is_file()
+        for p in REPO_ROOT.iterdir()
+        if p.is_dir()
+        and not p.name.startswith(".")
+        and (p / ".claude-plugin" / "plugin.json").is_file()
     )
 
 
