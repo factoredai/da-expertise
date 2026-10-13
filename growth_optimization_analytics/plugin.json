@@ -1,0 +1,16 @@
+
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "growth-optimization-analytics",
+  "version": "1.0.0",
+  "description": "Comprehensive analytics toolkit for experimentation and statistical analysis.",
+  "author": {
+    "name": "G&O Expertise Group",
+    "email": "sebastian.rupani@factored.ai"
+  },
+  "repository": "https://github.com/factoredai/da-expertise.git",
+  "keywords": [
+    "metrics",
+    "eda"
+  ]
+}
